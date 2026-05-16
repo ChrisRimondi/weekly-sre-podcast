@@ -20,22 +20,18 @@
       <title>Weekly SRE Briefing - May 16, 2026</title>
       <description>Weekly SRE Briefing - May 16, 2026
 
-This episode is AI-generated.
+This episode is AI-generated and based only on public sources.
 
-Highlights
+Intro
 
-Kubernetes v1.36 is the main platform signal this week, with upgrade-safety work, resource-management changes, and networking deprecations worth reviewing before the next cluster lifecycle plan.
+Welcome to the Weekly SRE Briefing for Saturday, May 16, 2026.
 
-OpenTelemetry introduced Blueprints and Reference Implementations, a useful direction for teams that want less bespoke collector and SDK configuration work.
-
-Incidents and Postmortems
-
-Azure&apos;s recent East US control-plane PIR
+This week has a useful shape to it. We have one major public post-incident review from Azure that is worth reading closely, a busy Cloudflare status history that reminds us how often the edge of the internet is held together by regional failover and careful customer communication, several Kubernetes 1.36 changes that point dire
 
 Disclosure: this episode is AI-generated.</description>
       <pubDate>Sat, 16 May 2026 16:00:00 GMT</pubDate>
       <guid isPermaLink="false">weekly-sre-2026-05-16</guid>
-      <enclosure url="https://chrisrimondi.github.io/weekly-sre-podcast/episodes/weekly-sre-2026-05-16.mp3" length="1292928" type="audio/mpeg"/>
+      <enclosure url="https://chrisrimondi.github.io/weekly-sre-podcast/episodes/weekly-sre-2026-05-16.mp3" length="35405228" type="audio/mpeg"/>
       <itunes:explicit>false</itunes:explicit>
     </item>
   </channel>
