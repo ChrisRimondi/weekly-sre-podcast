@@ -1,0 +1,14 @@
+{
+  "name": "weekly-sre-podcast",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate:feed": "node scripts/generate-feed.mjs",
+    "generate:audio": "node scripts/generate-audio.mjs",
+    "publish:episode": "node scripts/publish-episode.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

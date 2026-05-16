@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Weekly SRE Briefing</title>
+    <link>https://chrisrimondi.github.io/weekly-sre-podcast</link>
+    <description>A weekly AI-generated briefing on reliability engineering, incidents, cloud platforms, Kubernetes, observability, and practical SRE lessons. Disclosure: episodes use AI-generated voices.</description>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 16 May 2026 14:58:41 GMT</lastBuildDate>
+    <itunes:author>Chris Rimondi</itunes:author>
+    <itunes:owner>
+      <itunes:name>Chris Rimondi</itunes:name>
+      <itunes:email>replace-me@example.com</itunes:email>
+    </itunes:owner>
+    <itunes:image href="https://chrisrimondi.github.io/weekly-sre-podcast/artwork/cover.jpg"/>
+    <itunes:category text="Technology"/>
+    <itunes:explicit>false</itunes:explicit>
+
+  </channel>
+</rss>

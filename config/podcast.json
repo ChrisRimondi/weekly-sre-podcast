@@ -1,0 +1,18 @@
+{
+  "title": "Weekly SRE Briefing",
+  "description": "A weekly AI-generated briefing on reliability engineering, incidents, cloud platforms, Kubernetes, observability, and practical SRE lessons.",
+  "author": "Chris Rimondi",
+  "ownerName": "Chris Rimondi",
+  "ownerEmail": "replace-me@example.com",
+  "language": "en-us",
+  "category": "Technology",
+  "explicit": false,
+  "siteUrl": "https://chrisrimondi.github.io/weekly-sre-podcast",
+  "feedUrl": "https://chrisrimondi.github.io/weekly-sre-podcast/feed.xml",
+  "imageUrl": "https://chrisrimondi.github.io/weekly-sre-podcast/artwork/cover.jpg",
+  "tts": {
+    "model": "gpt-4o-mini-tts",
+    "voice": "cedar",
+    "instructions": "Read this as a calm, concise technical podcast briefing for an experienced SRE leader. Sound natural and thoughtful. Keep acronyms clear, avoid hype, and maintain a steady Saturday-morning briefing tone."
+  }
+}
