@@ -25,4 +25,6 @@ GitHub Pages output is public. Keep summaries free of internal incidents, custom
 
 ## TTS
 
-The audio script uses OpenAI's Speech endpoint with `gpt-4o-mini-tts` and the `cedar` voice. The podcast description and episode descriptions disclose that the voice is AI-generated.
+The audio script uses OpenAI's Speech endpoint with `gpt-4o-mini-tts` and the `cedar` voice. Long scripts are split into multiple TTS segments and stitched into a single MP3 with `ffmpeg`.
+
+For a roughly 30-minute episode, write about 4,300 to 4,800 spoken words. The podcast description and episode descriptions disclose that the voice is AI-generated.
