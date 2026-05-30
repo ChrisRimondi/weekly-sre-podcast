@@ -7,7 +7,7 @@
     <link>https://chrisrimondi.github.io/weekly-sre-podcast</link>
     <description>A weekly AI-generated briefing on reliability engineering, incidents, cloud platforms, Kubernetes, observability, and practical SRE lessons. Disclosure: episodes use AI-generated voices.</description>
     <language>en-us</language>
-    <lastBuildDate>Sat, 16 May 2026 16:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 30 May 2026 16:00:00 GMT</lastBuildDate>
     <itunes:author>Chris Rimondi</itunes:author>
     <itunes:owner>
       <itunes:name>Chris Rimondi</itunes:name>
@@ -16,6 +16,26 @@
     <itunes:image href="https://chrisrimondi.github.io/weekly-sre-podcast/artwork/cover.jpg"/>
     <itunes:category text="Technology"/>
     <itunes:explicit>false</itunes:explicit>
+    <item>
+      <title>Weekly SRE Briefing - May 30, 2026</title>
+      <description>Weekly SRE Briefing - May 30, 2026
+
+This episode is AI-generated and based only on public sources.
+
+Intro
+
+Welcome to the Weekly SRE Briefing for Saturday, May 30, 2026.
+
+This week&apos;s theme is the reliability of the systems that decide whether other systems are allowed to work.
+
+That sounds abstract, but the pattern is very concrete. A build cannot start because an account review system disabled the service account behind the workflow. A GitHub App cannot authenticate because a cache proxy upgrad
+
+Disclosure: this episode is AI-generated.</description>
+      <pubDate>Sat, 30 May 2026 16:00:00 GMT</pubDate>
+      <guid isPermaLink="false">weekly-sre-2026-05-30</guid>
+      <enclosure url="https://chrisrimondi.github.io/weekly-sre-podcast/episodes/weekly-sre-2026-05-30.mp3" length="30659756" type="audio/mpeg"/>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
     <item>
       <title>Weekly SRE Briefing - May 16, 2026</title>
       <description>Weekly SRE Briefing - May 16, 2026
