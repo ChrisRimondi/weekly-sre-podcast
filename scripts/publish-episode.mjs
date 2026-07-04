@@ -15,6 +15,10 @@ function run(command, args) {
   }
 }
 
+function runResult(command, args) {
+  return spawnSync(command, args, { stdio: "inherit" });
+}
+
 const slug = notePath.split("/").pop().replace(/\.md$/i, "");
 const audioPath = `episodes/${slug}.mp3`;
 
@@ -24,5 +28,16 @@ if (!existsSync(audioPath)) {
 
 run("node", ["scripts/generate-feed.mjs"]);
 run("git", ["add", notePath, audioPath, "feed.xml"]);
-run("git", ["commit", "-m", `Publish ${slug}`]);
+
+const diff = spawnSync("git", ["diff", "--cached", "--quiet"]);
+if (diff.status === 0) {
+  console.log(`No publish changes for ${slug}.`);
+  process.exit(0);
+}
+
+const commit = runResult("git", ["commit", "-m", `Publish ${slug}`]);
+if (commit.status !== 0) {
+  process.exit(commit.status ?? 1);
+}
+
 run("git", ["push"]);
