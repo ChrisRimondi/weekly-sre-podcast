@@ -11,6 +11,7 @@ async function getEpisodes() {
     .reverse();
 
   const episodes = [];
+  const skipped = [];
   for (const noteFile of noteFiles) {
     const slug = noteFile.replace(/\.md$/i, "");
     const audioPath = path.join("episodes", `${slug}.mp3`);
@@ -18,6 +19,7 @@ async function getEpisodes() {
     try {
       audioStats = await stat(audioPath);
     } catch {
+      skipped.push({ noteFile, audioPath });
       continue;
     }
 
@@ -36,10 +38,10 @@ async function getEpisodes() {
       length: audioStats.size
     });
   }
-  return episodes;
+  return { episodes, skipped };
 }
 
-const episodes = await getEpisodes();
+const { episodes, skipped } = await getEpisodes();
 const latestDate = episodes[0]?.pubDate ?? new Date();
 
 const items = episodes
@@ -78,3 +80,9 @@ ${items}
 
 await writeFile("feed.xml", feed);
 console.log(`feed.xml (${episodes.length} episode${episodes.length === 1 ? "" : "s"})`);
+if (skipped.length > 0) {
+  console.warn(`Skipped ${skipped.length} note${skipped.length === 1 ? "" : "s"} without matching audio:`);
+  for (const { noteFile, audioPath } of skipped) {
+    console.warn(`- notes/${noteFile} -> missing ${audioPath}`);
+  }
+}
