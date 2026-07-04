@@ -1,0 +1,70 @@
+name: Publish podcast episode
+
+on:
+  workflow_dispatch:
+    inputs:
+      note_path:
+        description: "Episode note path, for example notes/weekly-sre-2026-07-04.md"
+        required: true
+        type: string
+  push:
+    paths:
+      - "notes/weekly-sre-*.md"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-podcast-episode
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Select episode note
+        id: note
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            note_path="${{ inputs.note_path }}"
+          else
+            note_path="$(git diff-tree --no-commit-id --name-only -r "${{ github.sha }}" | grep '^notes/weekly-sre-.*\.md$' | sort | tail -1)"
+          fi
+
+          if [ -z "$note_path" ]; then
+            echo "No weekly SRE note changed in this commit."
+            exit 1
+          fi
+
+          if [ ! -f "$note_path" ]; then
+            echo "Note not found: $note_path"
+            exit 1
+          fi
+
+          echo "note_path=$note_path" >> "$GITHUB_OUTPUT"
+
+      - name: Publish episode
+        run: npm run publish:episode -- "${{ steps.note.outputs.note_path }}"
