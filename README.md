@@ -7,7 +7,7 @@ Static GitHub Pages podcast feed for the weekly SRE briefing.
 1. Update `config/podcast.json` with your owner email.
 2. Add cover art at `artwork/cover.jpg`.
 3. Enable GitHub Pages for the repository.
-4. Set `OPENAI_API_KEY` in the environment where the automation runs.
+4. Set `OPENAI_API_KEY` as a GitHub Actions repository secret.
 
 ## Generate an episode
 
@@ -18,6 +18,16 @@ npm run publish:episode -- notes/weekly-sre-YYYY-MM-DD.md
 ```
 
 This generates the MP3 with OpenAI TTS, updates `feed.xml`, commits the new episode, and pushes it.
+
+## Recurring automation
+
+The Codex weekly automation prepares the public-safe note in `notes/weekly-sre-YYYY-MM-DD.md`. Network access from Codex automation runs may be restricted, so publishing is delegated to GitHub Actions:
+
+1. The automation commits the note to GitHub.
+2. `.github/workflows/publish-episode.yml` runs on GitHub infrastructure.
+3. The workflow generates the MP3 with OpenAI TTS, updates `feed.xml`, commits the audio and feed, and pushes the result to GitHub Pages.
+
+You can also run the workflow manually from GitHub Actions with the note path as input.
 
 ## Public content rule
 
