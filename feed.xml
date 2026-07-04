@@ -7,7 +7,7 @@
     <link>https://chrisrimondi.github.io/weekly-sre-podcast</link>
     <description>A weekly AI-generated briefing on reliability engineering, incidents, cloud platforms, Kubernetes, observability, and practical SRE lessons. Disclosure: episodes use AI-generated voices.</description>
     <language>en-us</language>
-    <lastBuildDate>Sat, 30 May 2026 16:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 04 Jul 2026 16:00:00 GMT</lastBuildDate>
     <itunes:author>Chris Rimondi</itunes:author>
     <itunes:owner>
       <itunes:name>Chris Rimondi</itunes:name>
@@ -16,6 +16,25 @@
     <itunes:image href="https://chrisrimondi.github.io/weekly-sre-podcast/artwork/cover.jpg"/>
     <itunes:category text="Technology"/>
     <itunes:explicit>false</itunes:explicit>
+    <item>
+      <title>Weekly SRE - 2026-07-04</title>
+      <description>Weekly SRE - 2026-07-04
+
+Intro
+
+Hello and welcome to the Weekly SRE podcast for July 4, 2026. I&apos;m your host, bringing you the latest in site reliability engineering, including recent incidents, platform updates, observability trends, and practical lessons to enhance system reliability. Let&apos;s dive into this week&apos;s highlights.
+
+Highlights
+
+This week, we explore several significant developments:
+Lakeside Software&apos;s SysTrack Reliability Engineering: A new tool applying SRE principles to end-user com
+
+Disclosure: this episode is AI-generated.</description>
+      <pubDate>Sat, 04 Jul 2026 16:00:00 GMT</pubDate>
+      <guid isPermaLink="false">weekly-sre-2026-07-04</guid>
+      <enclosure url="https://chrisrimondi.github.io/weekly-sre-podcast/episodes/weekly-sre-2026-07-04.mp3" length="4927149" type="audio/mpeg"/>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
     <item>
       <title>Weekly SRE Briefing - May 30, 2026</title>
       <description>Weekly SRE Briefing - May 30, 2026
