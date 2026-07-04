@@ -21,13 +21,21 @@ This generates the MP3 with OpenAI TTS, updates `feed.xml`, commits the new epis
 
 ## Recurring automation
 
-The Codex weekly automation prepares the public-safe note in `notes/weekly-sre-YYYY-MM-DD.md`. Network access from Codex automation runs may be restricted, so publishing is delegated to GitHub Actions:
+GitHub Actions runs the whole weekly podcast pipeline on a Saturday cron:
 
-1. The automation commits the note to GitHub.
-2. `.github/workflows/publish-episode.yml` runs on GitHub infrastructure.
-3. The workflow generates the MP3 with OpenAI TTS, updates `feed.xml`, commits the audio and feed, and pushes the result to GitHub Pages.
+1. `.github/workflows/publish-episode.yml` generates the public-safe note with OpenAI and web search.
+2. The workflow generates the MP3 with OpenAI TTS.
+3. The workflow updates `feed.xml`, commits the note/audio/feed, and pushes the result to GitHub Pages.
 
-You can also run the workflow manually from GitHub Actions with the note path as input.
+Required repository secret:
+
+- `OPENAI_API_KEY`
+
+Optional repository variable:
+
+- `OPENAI_TEXT_MODEL` defaults to `gpt-4.1` if unset.
+
+You can also run the workflow manually from GitHub Actions. Provide `note_path` to publish an existing note, or `episode_date` to generate a specific date.
 
 ## Public content rule
 
