@@ -7,7 +7,7 @@
     <link>https://chrisrimondi.github.io/weekly-sre-podcast</link>
     <description>A weekly AI-generated briefing on reliability engineering, incidents, cloud platforms, Kubernetes, observability, and practical SRE lessons. Disclosure: episodes use AI-generated voices.</description>
     <language>en-us</language>
-    <lastBuildDate>Sat, 11 Jul 2026 16:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 18 Jul 2026 16:00:00 GMT</lastBuildDate>
     <itunes:author>Chris Rimondi</itunes:author>
     <itunes:owner>
       <itunes:name>Chris Rimondi</itunes:name>
@@ -16,6 +16,25 @@
     <itunes:image href="https://chrisrimondi.github.io/weekly-sre-podcast/artwork/cover.jpg"/>
     <itunes:category text="Technology"/>
     <itunes:explicit>false</itunes:explicit>
+    <item>
+      <title>Weekly SRE - 2026-07-18</title>
+      <description>Weekly SRE - 2026-07-18
+
+Intro
+
+Hello and welcome to the Weekly SRE podcast for July 18, 2026. I&apos;m your host, and today we&apos;ll delve into the latest developments in site reliability engineering. We&apos;ll cover recent incidents and postmortems, platform and cloud updates, advancements in observability and tooling, and practical lessons for SRE professionals. Let&apos;s get started.
+
+Highlights
+
+This week, several significant events have shaped the reliability engineering landscape:
+Lakeside Software intro
+
+Disclosure: this episode is AI-generated.</description>
+      <pubDate>Sat, 18 Jul 2026 16:00:00 GMT</pubDate>
+      <guid isPermaLink="false">weekly-sre-2026-07-18</guid>
+      <enclosure url="https://chrisrimondi.github.io/weekly-sre-podcast/episodes/weekly-sre-2026-07-18.mp3" length="6868653" type="audio/mpeg"/>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
     <item>
       <title>Weekly SRE - 2026-07-11</title>
       <description>Weekly SRE - 2026-07-11
