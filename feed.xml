@@ -7,7 +7,7 @@
     <link>https://chrisrimondi.github.io/weekly-sre-podcast</link>
     <description>A weekly AI-generated briefing on reliability engineering, incidents, cloud platforms, Kubernetes, observability, and practical SRE lessons. Disclosure: episodes use AI-generated voices.</description>
     <language>en-us</language>
-    <lastBuildDate>Sat, 18 Jul 2026 16:00:00 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 25 Jul 2026 16:00:00 GMT</lastBuildDate>
     <itunes:author>Chris Rimondi</itunes:author>
     <itunes:owner>
       <itunes:name>Chris Rimondi</itunes:name>
@@ -16,6 +16,25 @@
     <itunes:image href="https://chrisrimondi.github.io/weekly-sre-podcast/artwork/cover.jpg"/>
     <itunes:category text="Technology"/>
     <itunes:explicit>false</itunes:explicit>
+    <item>
+      <title>Weekly SRE - 2026-07-25</title>
+      <description>Weekly SRE - 2026-07-25
+
+Intro
+
+Hello and welcome to the Weekly SRE podcast for July 25, 2026. I&apos;m your host, bringing you the latest in Site Reliability Engineering news, including recent incidents, platform updates, observability trends, and practical lessons to enhance system reliability. Let&apos;s dive into this week&apos;s highlights.
+
+Highlights
+
+This week, we observed significant developments in the SRE landscape:
+Mandatory Reliability Standards for Data Centers: The Federal Energy Regulatory Comm
+
+Disclosure: this episode is AI-generated.</description>
+      <pubDate>Sat, 25 Jul 2026 16:00:00 GMT</pubDate>
+      <guid isPermaLink="false">weekly-sre-2026-07-25</guid>
+      <enclosure url="https://chrisrimondi.github.io/weekly-sre-podcast/episodes/weekly-sre-2026-07-25.mp3" length="4522413" type="audio/mpeg"/>
+      <itunes:explicit>false</itunes:explicit>
+    </item>
     <item>
       <title>Weekly SRE - 2026-07-18</title>
       <description>Weekly SRE - 2026-07-18
