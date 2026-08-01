@@ -1,13 +1,14 @@
-const REQUIRED_SECTIONS = [
-  "Intro",
-  "Highlights",
-  "Incidents and Postmortems",
-  "Platform/Cloud Updates",
-  "Observability and Tooling",
-  "Practical Takeaways",
-  "Watchlist for next week",
-  "Sources"
+export const SPOKEN_SECTION_BUDGETS = [
+  { name: "Intro", minWords: 180, maxWords: 220 },
+  { name: "Highlights", minWords: 800, maxWords: 900 },
+  { name: "Incidents and Postmortems", minWords: 1000, maxWords: 1100 },
+  { name: "Platform/Cloud Updates", minWords: 750, maxWords: 850 },
+  { name: "Observability and Tooling", minWords: 700, maxWords: 800 },
+  { name: "Practical Takeaways", minWords: 650, maxWords: 750 },
+  { name: "Watchlist for next week", minWords: 250, maxWords: 300 }
 ];
+
+const REQUIRED_SECTIONS = [...SPOKEN_SECTION_BUDGETS.map(({ name }) => name), "Sources"];
 
 const SOFTWARE_SRE_SIGNALS = [
   /\bsite reliability engineering\b|\bSREs?\b/i,
@@ -54,6 +55,17 @@ export function stripSources(markdown) {
 
 export function wordCount(text) {
   return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+export function extractEpisodeSection(markdown, sectionName) {
+  const escaped = sectionName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const heading = new RegExp(`^## ${escaped}\\s*$`, "mi").exec(markdown);
+  if (!heading) {
+    return "";
+  }
+  const remainder = markdown.slice(heading.index + heading[0].length);
+  const nextHeading = remainder.search(/^## /m);
+  return remainder.slice(0, nextHeading === -1 ? undefined : nextHeading).trim();
 }
 
 export function responseCompletionIssues(response) {

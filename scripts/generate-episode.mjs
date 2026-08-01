@@ -3,17 +3,21 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   buildRevisionContext,
+  extractEpisodeSection,
   MAX_EPISODE_WORDS,
   MIN_EPISODE_WORDS,
   responseCompletionIssues,
-  validateEpisodeDocument
+  SPOKEN_SECTION_BUDGETS,
+  validateEpisodeDocument,
+  wordCount
 } from "./episode-quality.mjs";
 
 const args = process.argv.slice(2);
 const replaceExisting = args.includes("--replace");
 const requestedDate = args.find((argument) => !argument.startsWith("--"));
 const model = process.env.OPENAI_TEXT_MODEL ?? "gpt-4.1";
-const maxAttempts = 4;
+const maxResearchAttempts = 3;
+const maxSectionAttempts = 3;
 
 function episodeDate() {
   const formatter = new Intl.DateTimeFormat("en-CA", {
@@ -130,6 +134,100 @@ async function generateEpisodeAttempt(date, priorIssues, priorDraft) {
   return response.json();
 }
 
+function cleanSectionBody(text, sectionName) {
+  const escaped = sectionName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text
+    .replace(new RegExp(`^## ${escaped}\\s*`, "i"), "")
+    .trim();
+}
+
+async function generateSection(date, section, researchDraft) {
+  const originalSection = extractEpisodeSection(researchDraft, section.name);
+  let priorBody = originalSection;
+
+  for (let attempt = 1; attempt <= maxSectionAttempts; attempt += 1) {
+    const priorWords = wordCount(priorBody);
+    const revision = attempt === 1
+      ? ""
+      : `\nThe prior version below was ${priorWords} words and missed the required ${section.minWords}-${section.maxWords}-word range. Return a complete replacement that corrects the length without padding or repetition.\n\n--- PRIOR SECTION ---\n${priorBody}\n--- END PRIOR SECTION ---`;
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model,
+        max_output_tokens: 3000,
+        input: [
+          {
+            role: "system",
+            content: [
+              {
+                type: "input_text",
+                text: "You are expanding one section of a public podcast for experienced Site Reliability Engineers. Stay strictly within software services, distributed systems, production engineering, and Google-style SRE. Use the supplied researched draft as the factual and source basis."
+              }
+            ]
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: `Write only the body of the '${section.name}' section for the Weekly SRE episode dated ${date}. Write ${section.minWords}-${section.maxWords} words of natural spoken prose. Do not include a heading, Sources section, preface, word-count note, or commentary. Deepen technical mechanisms and concrete operational lessons; do not invent facts beyond the researched draft.\n\n--- RESEARCHED DRAFT ---\n${researchDraft}\n--- END RESEARCHED DRAFT ---${revision}`
+              }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`OpenAI section generation failed for ${section.name}: ${response.status} ${body}`);
+    }
+
+    const apiResponse = await response.json();
+    const completionIssues = responseCompletionIssues(apiResponse);
+    const body = cleanSectionBody(extractText(apiResponse), section.name);
+    const words = wordCount(body);
+    const hasUnexpectedHeading = /^## /m.test(body);
+
+    if (
+      completionIssues.length === 0 &&
+      !hasUnexpectedHeading &&
+      words >= section.minWords &&
+      words <= section.maxWords
+    ) {
+      console.error(`${section.name}: ${words} words (attempt ${attempt}/${maxSectionAttempts}).`);
+      return body;
+    }
+
+    priorBody = body || priorBody;
+    console.error(
+      `${section.name} attempt ${attempt}/${maxSectionAttempts} rejected: ${words} words${hasUnexpectedHeading ? ", unexpected heading" : ""}${completionIssues.length ? `, ${completionIssues.join(" ")}` : ""}.`
+    );
+  }
+
+  throw new Error(`Unable to generate ${section.minWords}-${section.maxWords} words for ${section.name}.`);
+}
+
+async function expandEpisodeBySection(date, researchDraft) {
+  const sources = extractEpisodeSection(researchDraft, "Sources");
+  if (!sources) {
+    throw new Error("Researched draft has no Sources section to preserve.");
+  }
+
+  const sections = [];
+  for (const section of SPOKEN_SECTION_BUDGETS) {
+    console.error(`Expanding ${section.name} to ${section.minWords}-${section.maxWords} words...`);
+    sections.push({ name: section.name, body: await generateSection(date, section, researchDraft) });
+  }
+
+  const spokenSections = sections.map(({ name, body }) => `## ${name}\n\n${body}`).join("\n\n");
+  return `# Weekly SRE - ${date}\n\n${spokenSections}\n\n## Sources\n\n${sources}`;
+}
+
 const date = requestedDate ?? episodeDate();
 const notePath = path.join("notes", `weekly-sre-${date}.md`);
 
@@ -156,8 +254,8 @@ let episode = "";
 let priorIssues = [];
 let priorDraft = "";
 
-for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-  console.error(`Generating episode draft ${attempt}/${maxAttempts} with ${model}...`);
+for (let attempt = 1; attempt <= maxResearchAttempts; attempt += 1) {
+  console.error(`Generating researched episode draft ${attempt}/${maxResearchAttempts} with ${model}...`);
   const apiResponse = await generateEpisodeAttempt(date, priorIssues, priorDraft);
   const completionIssues = responseCompletionIssues(apiResponse);
   const candidate = extractText(apiResponse);
@@ -172,6 +270,31 @@ for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     break;
   }
 
+  const nonLengthIssues = issues.filter((issue) => !issue.startsWith("Spoken script is "));
+  if (candidate && nonLengthIssues.length === 0) {
+    console.error(`Research draft passed topical, structural, and source checks at ${validation.spokenWords} words; expanding it section by section.`);
+    try {
+      const expanded = await expandEpisodeBySection(date, candidate);
+      const expandedValidation = validateEpisodeDocument(expanded);
+      if (expandedValidation.issues.length === 0) {
+        episode = expanded;
+        console.error(
+          `Expanded draft passed: ${expandedValidation.spokenWords} spoken words, ${expandedValidation.sourceLinkCount} sources, ${expandedValidation.softwareSignalCount} software-SRE signals.`
+        );
+        break;
+      }
+      priorIssues = expandedValidation.issues;
+      priorDraft = expanded;
+      console.error(`Expanded draft rejected:\n- ${priorIssues.join("\n- ")}`);
+      continue;
+    } catch (error) {
+      priorIssues = [error.message];
+      priorDraft = candidate;
+      console.error(`Section expansion failed: ${error.message}`);
+      continue;
+    }
+  }
+
   priorIssues = candidate ? issues : [...issues, "OpenAI returned no episode text."];
   if (candidate) {
     priorDraft = candidate;
@@ -180,7 +303,7 @@ for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
 }
 
 if (!episode) {
-  throw new Error(`Unable to generate a publishable episode after ${maxAttempts} attempts.`);
+  throw new Error(`Unable to generate a publishable episode after ${maxResearchAttempts} researched-draft attempts.`);
 }
 
 await writeFile(notePath, `${episode.trim()}\n`);

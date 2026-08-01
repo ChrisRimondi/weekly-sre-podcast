@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildRevisionContext,
+  extractEpisodeSection,
   responseCompletionIssues,
   stripSources,
   validateAudioDuration,
@@ -77,6 +78,13 @@ test("builds a complete-document expansion request from a short draft", () => {
   assert.match(context, /complete replacement document/);
   assert.match(context, /BEGIN REJECTED DRAFT/);
   assert.match(context, /Spoken script is too short/);
+});
+
+test("extracts section bodies for independent expansion", () => {
+  const episode = validEpisode();
+  assert.equal(wordCount(extractEpisodeSection(episode, "Highlights")), 610);
+  assert.match(extractEpisodeSection(episode, "Sources"), /Primary engineering source 8/);
+  assert.equal(extractEpisodeSection(episode, "Missing"), "");
 });
 
 test("checks final audio duration", () => {
