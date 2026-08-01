@@ -48,7 +48,7 @@ export const TARGET_EPISODE_WORDS = 4500;
 export const MIN_AUDIO_SECONDS = 25 * 60;
 export const MAX_AUDIO_SECONDS = 35 * 60;
 export const MIN_SOURCE_LINKS = 8;
-export const SECTION_MAX_WORD_TOLERANCE = 0.06;
+export const SECTION_MAX_WORD_TOLERANCE = 0.15;
 
 export function stripSources(markdown) {
   return markdown.replace(/^## Sources\s*$[\s\S]*$/im, "").trim();

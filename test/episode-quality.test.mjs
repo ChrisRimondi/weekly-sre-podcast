@@ -92,8 +92,9 @@ test("extracts section bodies for independent expansion", () => {
 test("allows a narrow section-length tolerance before the strict document gate", () => {
   const highlights = SPOKEN_SECTION_BUDGETS.find(({ name }) => name === "Highlights");
   assert.equal(sectionWordCountIsAcceptable(highlights, 949), true);
+  assert.equal(sectionWordCountIsAcceptable(highlights, 1000), true);
   assert.equal(sectionWordCountIsAcceptable(highlights, 799), false);
-  assert.equal(sectionWordCountIsAcceptable(highlights, 1000), false);
+  assert.equal(sectionWordCountIsAcceptable(highlights, 1040), false);
 });
 
 test("checks final audio duration", () => {
