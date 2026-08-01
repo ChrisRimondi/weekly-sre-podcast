@@ -54,6 +54,10 @@ export function stripSources(markdown) {
   return markdown.replace(/^## Sources\s*$[\s\S]*$/im, "").trim();
 }
 
+export function replaceEpisodeSources(markdown, sources) {
+  return `${stripSources(markdown)}\n\n## Sources\n\n${sources.trim()}`;
+}
+
 export function wordCount(text) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
@@ -111,6 +115,29 @@ export function responseCompletionIssues(response) {
     issues.push(`OpenAI response is incomplete: ${response.incomplete_details.reason ?? "unknown reason"}.`);
   }
   return issues;
+}
+
+export function validateSourceList(sources) {
+  const issues = [];
+  const linkOpeners = sources.match(/\]\(/g)?.length ?? 0;
+  const links = [...sources.matchAll(/\[[^\]\n]+\]\((https:\/\/[^\s)]+)\)/g)];
+
+  if (links.length < MIN_SOURCE_LINKS) {
+    issues.push(`Sources section has ${links.length} valid HTTPS links; expected at least ${MIN_SOURCE_LINKS}.`);
+  }
+  if (linkOpeners !== links.length) {
+    issues.push("Sources section contains a malformed or truncated Markdown link.");
+  }
+
+  for (const [, url] of links) {
+    try {
+      new URL(url);
+    } catch {
+      issues.push(`Sources section contains an invalid URL: ${url}`);
+    }
+  }
+
+  return { issues, sourceLinkCount: links.length };
 }
 
 export function buildRevisionContext(draft, issues) {
@@ -188,28 +215,13 @@ export function validateEpisodeDocument(markdown) {
   }
 
   const sources = markdown.match(/^## Sources\s*$([\s\S]*)$/im)?.[1] ?? "";
-  const linkOpeners = sources.match(/\]\(/g)?.length ?? 0;
-  const links = [...sources.matchAll(/\[[^\]\n]+\]\((https:\/\/[^\s)]+)\)/g)];
-
-  if (links.length < MIN_SOURCE_LINKS) {
-    issues.push(`Sources section has ${links.length} valid HTTPS links; expected at least ${MIN_SOURCE_LINKS}.`);
-  }
-  if (linkOpeners !== links.length) {
-    issues.push("Sources section contains a malformed or truncated Markdown link.");
-  }
-
-  for (const [, url] of links) {
-    try {
-      new URL(url);
-    } catch {
-      issues.push(`Sources section contains an invalid URL: ${url}`);
-    }
-  }
+  const sourceValidation = validateSourceList(sources);
+  issues.push(...sourceValidation.issues);
 
   return {
     issues,
     spokenWords,
     softwareSignalCount,
-    sourceLinkCount: links.length
+    sourceLinkCount: sourceValidation.sourceLinkCount
   };
 }

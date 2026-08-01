@@ -7,12 +7,14 @@ import {
   MAX_EPISODE_WORDS,
   MIN_EPISODE_WORDS,
   NORMALIZED_EPISODE_WORDS,
+  replaceEpisodeSources,
   responseCompletionIssues,
   sectionMeetsMinimumWordCount,
   SPOKEN_SECTION_BUDGETS,
   stripSources,
   trimInteriorSentences,
   validateEpisodeDocument,
+  validateSourceList,
   wordCount
 } from "./episode-quality.mjs";
 
@@ -22,6 +24,7 @@ const requestedDate = args.find((argument) => !argument.startsWith("--"));
 const model = process.env.OPENAI_TEXT_MODEL ?? "gpt-4.1";
 const maxResearchAttempts = 3;
 const maxSectionAttempts = 3;
+const maxSourceAttempts = 3;
 
 function episodeDate() {
   const formatter = new Intl.DateTimeFormat("en-CA", {
@@ -136,6 +139,69 @@ async function generateEpisodeAttempt(date, priorIssues, priorDraft) {
   }
 
   return response.json();
+}
+
+function cleanSourceList(text) {
+  return text.replace(/^## Sources\s*/i, "").trim();
+}
+
+async function generateSourceList(date, researchDraft) {
+  let priorIssues = [];
+
+  for (let attempt = 1; attempt <= maxSourceAttempts; attempt += 1) {
+    const retry = priorIssues.length === 0
+      ? ""
+      : `\nThe previous source list was rejected:\n${priorIssues.map((issue) => `- ${issue}`).join("\n")}\nCreate a fresh, complete replacement list.`;
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model,
+        tools: [{ type: "web_search_preview" }],
+        max_output_tokens: 3000,
+        input: [
+          {
+            role: "system",
+            content: [
+              {
+                type: "input_text",
+                text: "You are the research editor for a public software Site Reliability Engineering podcast. Find accurate public sources about software services, distributed systems, cloud platforms, observability, and production engineering. Exclude weather, natural disasters, energy grids, nuclear power, transportation, manufacturing, and physical-equipment reliability."
+              }
+            ]
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: `Research and return 8-12 sources that support the Weekly SRE draft below for the seven days ending ${date}. Prioritize primary engineering posts, official documentation or release notes, and first-party incident reports. Return only a Markdown bullet list. Every bullet must have exactly this form: - [descriptive title](https://complete-url). Do not return a heading, prose, bare URLs, citation syntax, or truncated links.\n\n--- DRAFT ---\n${researchDraft}\n--- END DRAFT ---${retry}`
+              }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`OpenAI source generation failed: ${response.status} ${body}`);
+    }
+
+    const apiResponse = await response.json();
+    const sources = cleanSourceList(extractText(apiResponse));
+    const validation = validateSourceList(sources);
+    priorIssues = [...responseCompletionIssues(apiResponse), ...validation.issues];
+    if (sources && priorIssues.length === 0) {
+      console.error(`Source repair passed with ${validation.sourceLinkCount} links (attempt ${attempt}/${maxSourceAttempts}).`);
+      return sources;
+    }
+    console.error(`Source repair attempt ${attempt}/${maxSourceAttempts} rejected:\n- ${priorIssues.join("\n- ")}`);
+  }
+
+  throw new Error(`Unable to generate at least eight valid source links after ${maxSourceAttempts} attempts.`);
 }
 
 function cleanSectionBody(text, sectionName) {
@@ -296,9 +362,25 @@ for (let attempt = 1; attempt <= maxResearchAttempts; attempt += 1) {
   console.error(`Generating researched episode draft ${attempt}/${maxResearchAttempts} with ${model}...`);
   const apiResponse = await generateEpisodeAttempt(date, priorIssues, priorDraft);
   const completionIssues = responseCompletionIssues(apiResponse);
-  const candidate = extractText(apiResponse);
-  const validation = validateEpisodeDocument(candidate);
-  const issues = [...completionIssues, ...validation.issues];
+  let candidate = extractText(apiResponse);
+  let validation = validateEpisodeDocument(candidate);
+  let issues = [...completionIssues, ...validation.issues];
+
+  const sourceIssues = issues.filter((issue) => issue.startsWith("Sources section "));
+  const issuesOtherThanLengthAndSources = issues.filter(
+    (issue) => !issue.startsWith("Spoken script is ") && !issue.startsWith("Sources section ")
+  );
+  if (candidate && sourceIssues.length > 0 && issuesOtherThanLengthAndSources.length === 0) {
+    console.error(`Research draft has usable scope and structure but needs source repair:\n- ${sourceIssues.join("\n- ")}`);
+    try {
+      candidate = replaceEpisodeSources(candidate, await generateSourceList(date, candidate));
+      validation = validateEpisodeDocument(candidate);
+      issues = validation.issues;
+    } catch (error) {
+      issues = [...issues, error.message];
+      console.error(`Source repair failed: ${error.message}`);
+    }
+  }
 
   if (candidate && issues.length === 0) {
     episode = candidate;

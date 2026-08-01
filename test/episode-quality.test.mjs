@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildRevisionContext,
   extractEpisodeSection,
+  replaceEpisodeSources,
   responseCompletionIssues,
   sectionMeetsMinimumWordCount,
   SPOKEN_SECTION_BUDGETS,
@@ -10,6 +11,7 @@ import {
   trimInteriorSentences,
   validateAudioDuration,
   validateEpisodeDocument,
+  validateSourceList,
   wordCount
 } from "../scripts/episode-quality.mjs";
 
@@ -63,6 +65,21 @@ test("rejects a truncated source link", () => {
     "https://example.com/source-8"
   ));
   assert.equal(result.issues.some((issue) => issue.includes("malformed or truncated")), true);
+});
+
+test("validates and replaces a source list independently", () => {
+  const sources = Array.from(
+    { length: 8 },
+    (_, index) => `- [Source ${index + 1}](https://example.com/${index + 1})`
+  ).join("\n");
+  assert.deepEqual(validateSourceList(sources), { issues: [], sourceLinkCount: 8 });
+
+  const repaired = replaceEpisodeSources(
+    validEpisode().replace(/- \[Primary engineering source 8\][\s\S]*$/, ""),
+    sources
+  );
+  assert.equal(extractEpisodeSection(repaired, "Sources"), sources);
+  assert.equal(validateEpisodeDocument(repaired).sourceLinkCount, 8);
 });
 
 test("checks Responses API completion state", () => {
