@@ -5,6 +5,7 @@ import {
   buildRevisionContext,
   extractEpisodeSection,
   MAX_EPISODE_WORDS,
+  mentionedSourceEntities,
   MIN_EPISODE_WORDS,
   NORMALIZED_EPISODE_WORDS,
   replaceEpisodeSources,
@@ -14,6 +15,7 @@ import {
   stripSources,
   trimInteriorSentences,
   validateEpisodeDocument,
+  validateSourceCoverage,
   validateSourceList,
   wordCount
 } from "./episode-quality.mjs";
@@ -70,7 +72,9 @@ OUT OF SCOPE:
 - Generic infrastructure or business news with no direct software-service reliability lesson
 - A story does not qualify merely because it contains the words reliability, infrastructure, incident, or outage
 
-Research public material published during the seven days ending ${date}. Prioritize primary engineering sources and first-party incident reports. Verify that each selected item is about operating software systems; discard it otherwise.
+Research public material published during the seven days ending ${date}. Prioritize primary engineering sources and first-party incident reports. Verify that each selected item is about operating software systems; discard it otherwise. Select no more than four current-event story clusters. Reuse those sourced stories from different technical angles across sections instead of inventing additional news to fill space.
+
+Every specific incident, product release, feature, version number, date, duration, root cause, impact, and vendor claim must be directly supported by a linked source. Do not infer or fabricate a vendor announcement. If there is no verified platform or tooling release in the research window, use the corresponding section to analyze platform or observability implications of a sourced incident. Fill the word budget with timeless technical explanation and operational analysis, not extra unsupported claims.
 
 Write a polished solo podcast script for an experienced SRE audience. The SPOKEN portion, excluding the Sources section, must contain ${MIN_EPISODE_WORDS}-${MAX_EPISODE_WORDS} words, targeting 4,500 words and roughly 30 minutes at 150 words per minute. Do not return an outline or terse digest. Use connected spoken prose, explain technical mechanisms, and draw specific operational lessons.
 
@@ -96,7 +100,7 @@ Use exactly these Markdown sections:
 Start with this H1:
 # Weekly SRE - ${date}
 
-Include at least eight complete HTTPS Markdown links in the Sources section. Mention important source attribution naturally in the spoken script. Before returning, verify the topical scope, section structure, source links, and spoken word count. Return only the finished episode document.${buildRevisionContext(priorDraft, priorIssues)}`;
+Include at least eight complete HTTPS Markdown links in the Sources section. Every named vendor, platform, or tool discussed in the script must have at least one clearly matching source title or URL in that section. Mention important source attribution naturally in the spoken script. Never describe this roughly 30-minute show as an hour or say "over the next hour." Before returning, verify the topical scope, factual grounding, section structure, source links, and spoken word count. Return only the finished episode document.${buildRevisionContext(priorDraft, priorIssues)}`;
 }
 
 async function generateEpisodeAttempt(date, priorIssues, priorDraft) {
@@ -147,6 +151,7 @@ function cleanSourceList(text) {
 
 async function generateSourceList(date, researchDraft) {
   let priorIssues = [];
+  const requiredEntities = mentionedSourceEntities(researchDraft);
 
   for (let attempt = 1; attempt <= maxSourceAttempts; attempt += 1) {
     const retry = priorIssues.length === 0
@@ -177,7 +182,7 @@ async function generateSourceList(date, researchDraft) {
             content: [
               {
                 type: "input_text",
-                text: `Research and return 8-12 sources that support the Weekly SRE draft below for the seven days ending ${date}. Prioritize primary engineering posts, official documentation or release notes, and first-party incident reports. Return only a Markdown bullet list. Every bullet must have exactly this form: - [descriptive title](https://complete-url). Do not return a heading, prose, bare URLs, citation syntax, or truncated links.\n\n--- DRAFT ---\n${researchDraft}\n--- END DRAFT ---${retry}`
+                text: `Research and return 8-20 sources that directly support the Weekly SRE draft below for the seven days ending ${date}. Prioritize primary engineering posts, official documentation or release notes, and first-party incident reports. The list must contain a source whose title or URL clearly names every one of these subjects mentioned in the draft: ${requiredEntities.join(", ") || "none"}. Do not add a source for a claim you cannot verify; instead, ensure the returned list makes unsupported coverage obvious to the caller. Return only a Markdown bullet list. Every bullet must have exactly this form: - [descriptive title](https://complete-url). Do not return a heading, prose, bare URLs, citation syntax, or truncated links.\n\n--- DRAFT ---\n${researchDraft}\n--- END DRAFT ---${retry}`
               }
             ]
           }
@@ -193,7 +198,12 @@ async function generateSourceList(date, researchDraft) {
     const apiResponse = await response.json();
     const sources = cleanSourceList(extractText(apiResponse));
     const validation = validateSourceList(sources);
-    priorIssues = [...responseCompletionIssues(apiResponse), ...validation.issues];
+    const repairedDraft = replaceEpisodeSources(researchDraft, sources);
+    priorIssues = [
+      ...responseCompletionIssues(apiResponse),
+      ...validation.issues,
+      ...validateSourceCoverage(repairedDraft)
+    ];
     if (sources && priorIssues.length === 0) {
       console.error(`Source repair passed with ${validation.sourceLinkCount} links (attempt ${attempt}/${maxSourceAttempts}).`);
       return sources;
@@ -235,7 +245,7 @@ async function generateSection(date, section, researchDraft) {
             content: [
               {
                 type: "input_text",
-                text: "You are expanding one section of a public podcast for experienced Site Reliability Engineers. Stay strictly within software services, distributed systems, production engineering, and Google-style SRE. Use the supplied researched draft as the factual and source basis."
+                text: "You are expanding one section of a public podcast for experienced Site Reliability Engineers. Stay strictly within software services, distributed systems, production engineering, and Google-style SRE. Use the supplied researched draft as the only factual and source basis."
               }
             ]
           },
@@ -244,7 +254,7 @@ async function generateSection(date, section, researchDraft) {
             content: [
               {
                 type: "input_text",
-                text: `Write only the body of the '${section.name}' section for the Weekly SRE episode dated ${date}. Write ${section.minWords}-${section.maxWords} words of natural spoken prose. Do not include a heading, Sources section, preface, word-count note, or commentary. Deepen technical mechanisms and concrete operational lessons; do not invent facts beyond the researched draft.\n\n--- RESEARCHED DRAFT ---\n${researchDraft}\n--- END RESEARCHED DRAFT ---${revision}`
+                text: `Write only the body of the '${section.name}' section for the Weekly SRE episode dated ${date}. Write ${section.minWords}-${section.maxWords} words of natural spoken prose. Do not include a heading, Sources section, preface, word-count note, or commentary. Deepen technical mechanisms and concrete operational lessons. Do not add any new vendor, product, feature, version, date, duration, incident, root cause, or impact beyond what is explicitly present in the researched draft and represented in its Sources section. Reach the length with evergreen technical analysis, failure-mode explanation, examples framed as hypotheticals, and actionable operating practices. Never describe the show as an hour.\n\n--- RESEARCHED DRAFT ---\n${researchDraft}\n--- END RESEARCHED DRAFT ---${revision}`
               }
             ]
           }

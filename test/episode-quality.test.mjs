@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildRevisionContext,
   extractEpisodeSection,
+  mentionedSourceEntities,
   replaceEpisodeSources,
   responseCompletionIssues,
   sectionMeetsMinimumWordCount,
@@ -11,6 +12,7 @@ import {
   trimInteriorSentences,
   validateAudioDuration,
   validateEpisodeDocument,
+  validateSourceCoverage,
   validateSourceList,
   wordCount
 } from "../scripts/episode-quality.mjs";
@@ -36,7 +38,7 @@ function validEpisode() {
   const body = sections.map((section) => `## ${section}\n\n${paragraph(610)}`).join("\n\n");
   const sources = Array.from(
     { length: 8 },
-    (_, index) => `- [Primary engineering source ${index + 1}](https://example.com/source-${index + 1})`
+    (_, index) => `- [Kubernetes engineering source ${index + 1}](https://example.com/kubernetes-${index + 1})`
   ).join("\n");
   return `# Weekly SRE - 2026-08-01\n\n${body}\n\n## Sources\n\n${sources}\n`;
 }
@@ -61,8 +63,8 @@ test("rejects physical reliability drift", () => {
 
 test("rejects a truncated source link", () => {
   const result = validateEpisodeDocument(validEpisode().replace(
-    "https://example.com/source-8)",
-    "https://example.com/source-8"
+    "https://example.com/kubernetes-8)",
+    "https://example.com/kubernetes-8"
   ));
   assert.equal(result.issues.some((issue) => issue.includes("malformed or truncated")), true);
 });
@@ -80,6 +82,25 @@ test("validates and replaces a source list independently", () => {
   );
   assert.equal(extractEpisodeSection(repaired, "Sources"), sources);
   assert.equal(validateEpisodeDocument(repaired).sourceLinkCount, 8);
+});
+
+test("requires source coverage for named platforms in the spoken script", () => {
+  const episode = validEpisode().replace("## Highlights", "## Highlights\n\nA GitHub incident affected AWS workloads.");
+  assert.deepEqual(mentionedSourceEntities(episode), ["AWS", "GitHub", "Kubernetes"]);
+  assert.deepEqual(
+    validateSourceCoverage(episode),
+    [
+      "Sources section does not cover mentioned platform: AWS.",
+      "Sources section does not cover mentioned platform: GitHub."
+    ]
+  );
+});
+
+test("rejects an hour-long duration promise", () => {
+  const result = validateEpisodeDocument(
+    validEpisode().replace("## Intro", "## Intro\n\nOver the next hour, welcome")
+  );
+  assert.equal(result.issues.some((issue) => issue.includes("hour-long episode")), true);
 });
 
 test("checks Responses API completion state", () => {
@@ -103,7 +124,7 @@ test("builds a complete-document expansion request from a short draft", () => {
 test("extracts section bodies for independent expansion", () => {
   const episode = validEpisode();
   assert.equal(wordCount(extractEpisodeSection(episode, "Highlights")), 610);
-  assert.match(extractEpisodeSection(episode, "Sources"), /Primary engineering source 8/);
+  assert.match(extractEpisodeSection(episode, "Sources"), /Kubernetes engineering source 8/);
   assert.equal(extractEpisodeSection(episode, "Missing"), "");
 });
 
@@ -126,6 +147,13 @@ test("normalizes overlong prose without chopping opening or closing sentences", 
   assert.match(result.text, /Closing takeaway stays intact\.$/);
   assert.equal(result.removedWords > 0, true);
   assert.equal(result.text.endsWith("."), true);
+});
+
+test("does not split sentences at decimal version numbers", () => {
+  const prose = "Opening stays. Grafana 11.0, which adds dashboards, remains supported. Closing stays.";
+  const result = trimInteriorSentences(prose, 20);
+  assert.equal(result.text, "Opening stays. Closing stays.");
+  assert.equal(result.text.includes("0, which"), false);
 });
 
 test("checks final audio duration", () => {

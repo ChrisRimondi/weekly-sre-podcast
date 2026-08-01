@@ -42,6 +42,23 @@ const OUT_OF_SCOPE_SIGNALS = [
   }
 ];
 
+const SOURCE_COVERAGE_ENTITIES = [
+  { label: "AWS", pattern: /\b(?:AWS|Amazon Web Services)\b/i },
+  { label: "GitHub", pattern: /\bGitHub\b/i },
+  { label: "Microsoft Azure or Entra", pattern: /\b(?:Microsoft Azure|Azure|Entra)\b/i },
+  { label: "Google Cloud or GKE", pattern: /\b(?:Google Cloud|GCP|GKE)\b/i },
+  { label: "Supabase", pattern: /\bSupabase\b/i },
+  { label: "Snowflake", pattern: /\bSnowflake\b/i },
+  { label: "Akamai", pattern: /\bAkamai\b/i },
+  { label: "Cloudflare", pattern: /\bCloudflare\b/i },
+  { label: "Kubernetes", pattern: /\bKubernetes\b/i },
+  { label: "Prometheus", pattern: /\bPrometheus\b/i },
+  { label: "Grafana", pattern: /\bGrafana\b/i },
+  { label: "Jaeger", pattern: /\bJaeger\b/i },
+  { label: "Datadog", pattern: /\bDatadog\b/i },
+  { label: "Slack", pattern: /\bSlack\b/i }
+];
+
 export const MIN_EPISODE_WORDS = 4000;
 export const MAX_EPISODE_WORDS = 5200;
 export const TARGET_EPISODE_WORDS = 4500;
@@ -82,7 +99,9 @@ export function trimInteriorSentences(text, maxWordsToRemove) {
     return { text, removedWords: 0 };
   }
 
-  const sentences = text.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g)?.map((sentence) => sentence.trim()).filter(Boolean) ?? [];
+  const sentences = [...new Intl.Segmenter("en", { granularity: "sentence" }).segment(text)]
+    .map(({ segment }) => segment.trim())
+    .filter(Boolean);
   if (sentences.length < 3) {
     return { text, removedWords: 0 };
   }
@@ -138,6 +157,24 @@ export function validateSourceList(sources) {
   }
 
   return { issues, sourceLinkCount: links.length };
+}
+
+export function mentionedSourceEntities(markdown) {
+  const spokenScript = stripSources(markdown);
+  return SOURCE_COVERAGE_ENTITIES
+    .filter(({ pattern }) => pattern.test(spokenScript))
+    .map(({ label }) => label);
+}
+
+export function validateSourceCoverage(markdown) {
+  const sources = extractEpisodeSection(markdown, "Sources");
+  const issues = [];
+  for (const { label, pattern } of SOURCE_COVERAGE_ENTITIES) {
+    if (pattern.test(stripSources(markdown)) && !pattern.test(sources)) {
+      issues.push(`Sources section does not cover mentioned platform: ${label}.`);
+    }
+  }
+  return issues;
 }
 
 export function buildRevisionContext(draft, issues) {
@@ -214,9 +251,17 @@ export function validateEpisodeDocument(markdown) {
     }
   }
 
+  if (/\b(?:(?:over|for) the next hour|hour-long)\b/i.test(spokenScript)) {
+    issues.push("Script describes itself as an hour-long episode; expected roughly 30 minutes.");
+  }
+  if (/(?:^|[.!?]\s+)0,\s+which\b/im.test(spokenScript)) {
+    issues.push("Script contains a likely broken numeric sentence fragment.");
+  }
+
   const sources = markdown.match(/^## Sources\s*$([\s\S]*)$/im)?.[1] ?? "";
   const sourceValidation = validateSourceList(sources);
   issues.push(...sourceValidation.issues);
+  issues.push(...validateSourceCoverage(markdown));
 
   return {
     issues,
