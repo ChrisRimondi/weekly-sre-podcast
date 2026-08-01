@@ -13,6 +13,11 @@ on:
         description: "Optional episode date to generate, in YYYY-MM-DD format"
         required: false
         type: string
+      regenerate:
+        description: "Replace an existing note for episode_date before publishing"
+        required: false
+        type: boolean
+        default: false
   push:
     paths:
       - "notes/weekly-sre-*.md"
@@ -32,12 +37,12 @@ jobs:
       OPENAI_TEXT_MODEL: ${{ vars.OPENAI_TEXT_MODEL || 'gpt-4.1' }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
 
@@ -60,7 +65,11 @@ jobs:
           elif [ "${{ github.event_name }}" = "push" ]; then
             note_path="$(git diff-tree --no-commit-id --name-only -r "${{ github.sha }}" | grep '^notes/weekly-sre-.*\.md$' | sort | tail -1)"
           elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.episode_date }}" ]; then
-            note_path="$(npm run --silent generate:episode -- "${{ inputs.episode_date }}" | tail -1)"
+            if [ "${{ inputs.regenerate }}" = "true" ]; then
+              note_path="$(npm run --silent generate:episode -- "${{ inputs.episode_date }}" --replace | tail -1)"
+            else
+              note_path="$(npm run --silent generate:episode -- "${{ inputs.episode_date }}" | tail -1)"
+            fi
           else
             note_path="$(npm run --silent generate:episode | tail -1)"
           fi

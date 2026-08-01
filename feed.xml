@@ -22,17 +22,12 @@
 
 Intro
 
-Hello and welcome to the Weekly SRE podcast for August 1, 2026. I&apos;m your host, bringing you the latest in Site Reliability Engineering news, notable outages, platform updates, observability trends, and practical lessons from the field. Let&apos;s dive into this week&apos;s highlights.
-
-Highlights
-
-This week, we witnessed significant developments across the SRE landscape:
-Severe Weather Impacts: A powerful tornado in Wisconsin caused extensive damage and widespread power out
+Welcome to another episode focused on the realities of running production systems at scale. As we reflect on the first half of 2026, it’s clear that even mature cloud and SaaS environments are susceptible to sudden and widespread outages. These events underscore a core SRE truth: dependency mapping and operational awareness are never finished projects. When failures occur – whether from provider-side automation, security incidents in AI infrastructure, or cascadin
 
 Disclosure: this episode is AI-generated.</description>
       <pubDate>Sat, 01 Aug 2026 16:00:00 GMT</pubDate>
       <guid isPermaLink="false">weekly-sre-2026-08-01</guid>
-      <enclosure url="https://chrisrimondi.github.io/weekly-sre-podcast/episodes/weekly-sre-2026-08-01.mp3" length="5588013" type="audio/mpeg"/>
+      <enclosure url="https://chrisrimondi.github.io/weekly-sre-podcast/episodes/weekly-sre-2026-08-01.mp3" length="31173933" type="audio/mpeg"/>
       <itunes:explicit>false</itunes:explicit>
     </item>
     <item>
