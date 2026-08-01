@@ -48,7 +48,6 @@ export const TARGET_EPISODE_WORDS = 4500;
 export const MIN_AUDIO_SECONDS = 25 * 60;
 export const MAX_AUDIO_SECONDS = 35 * 60;
 export const MIN_SOURCE_LINKS = 8;
-export const SECTION_MAX_WORD_TOLERANCE = 0.15;
 
 export function stripSources(markdown) {
   return markdown.replace(/^## Sources\s*$[\s\S]*$/im, "").trim();
@@ -69,12 +68,8 @@ export function extractEpisodeSection(markdown, sectionName) {
   return remainder.slice(0, nextHeading === -1 ? undefined : nextHeading).trim();
 }
 
-export function sectionAcceptanceMaxWords(section) {
-  return Math.ceil(section.maxWords * (1 + SECTION_MAX_WORD_TOLERANCE));
-}
-
-export function sectionWordCountIsAcceptable(section, words) {
-  return words >= section.minWords && words <= sectionAcceptanceMaxWords(section);
+export function sectionMeetsMinimumWordCount(section, words) {
+  return words >= section.minWords;
 }
 
 export function responseCompletionIssues(response) {

@@ -4,7 +4,7 @@ import {
   buildRevisionContext,
   extractEpisodeSection,
   responseCompletionIssues,
-  sectionWordCountIsAcceptable,
+  sectionMeetsMinimumWordCount,
   SPOKEN_SECTION_BUDGETS,
   stripSources,
   validateAudioDuration,
@@ -89,12 +89,11 @@ test("extracts section bodies for independent expansion", () => {
   assert.equal(extractEpisodeSection(episode, "Missing"), "");
 });
 
-test("allows a narrow section-length tolerance before the strict document gate", () => {
+test("lets the strict document gate own maximum length", () => {
   const highlights = SPOKEN_SECTION_BUDGETS.find(({ name }) => name === "Highlights");
-  assert.equal(sectionWordCountIsAcceptable(highlights, 949), true);
-  assert.equal(sectionWordCountIsAcceptable(highlights, 1000), true);
-  assert.equal(sectionWordCountIsAcceptable(highlights, 799), false);
-  assert.equal(sectionWordCountIsAcceptable(highlights, 1040), false);
+  assert.equal(sectionMeetsMinimumWordCount(highlights, 800), true);
+  assert.equal(sectionMeetsMinimumWordCount(highlights, 1067), true);
+  assert.equal(sectionMeetsMinimumWordCount(highlights, 799), false);
 });
 
 test("checks final audio duration", () => {

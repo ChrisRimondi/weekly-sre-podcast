@@ -34,7 +34,7 @@ Publication is blocked unless the generated episode:
 - includes every required section and at least eight complete HTTPS source links; and
 - produces 25 to 35 minutes of playable audio.
 
-The generator first creates a researched draft, then expands each spoken section independently to its assigned word budget, with a small per-section tolerance. The strict 4,000-to-5,200-word document gate remains authoritative. If the researched draft or any expanded section cannot pass its gates after three attempts, the workflow fails without publishing a short or off-topic episode.
+The generator first creates a researched draft, then expands each spoken section independently to its minimum word budget. The strict 4,000-to-5,200-word document gate remains authoritative for maximum length. If the researched draft or any expanded section cannot pass its gates after three attempts, the workflow fails without publishing a short or off-topic episode.
 
 Required repository secret:
 
