@@ -6,9 +6,12 @@ import {
   extractEpisodeSection,
   MAX_EPISODE_WORDS,
   MIN_EPISODE_WORDS,
+  NORMALIZED_EPISODE_WORDS,
   responseCompletionIssues,
   sectionMeetsMinimumWordCount,
   SPOKEN_SECTION_BUDGETS,
+  stripSources,
+  trimInteriorSentences,
   validateEpisodeDocument,
   wordCount
 } from "./episode-quality.mjs";
@@ -224,8 +227,43 @@ async function expandEpisodeBySection(date, researchDraft) {
     sections.push({ name: section.name, body: await generateSection(date, section, researchDraft) });
   }
 
-  const spokenSections = sections.map(({ name, body }) => `## ${name}\n\n${body}`).join("\n\n");
-  return `# Weekly SRE - ${date}\n\n${spokenSections}\n\n## Sources\n\n${sources}`;
+  function assemble() {
+    const spokenSections = sections.map(({ name, body }) => `## ${name}\n\n${body}`).join("\n\n");
+    return `# Weekly SRE - ${date}\n\n${spokenSections}\n\n## Sources\n\n${sources}`;
+  }
+
+  let expanded = assemble();
+  const expandedWords = wordCount(stripSources(expanded));
+  if (expandedWords > MAX_EPISODE_WORDS) {
+    let wordsToRemove = expandedWords - NORMALIZED_EPISODE_WORDS;
+    const candidates = sections
+      .map((section, index) => {
+        const budget = SPOKEN_SECTION_BUDGETS.find(({ name }) => name === section.name);
+        return {
+          index,
+          removableWords: Math.max(0, wordCount(section.body) - budget.minWords)
+        };
+      })
+      .filter(({ removableWords }) => removableWords > 0)
+      .sort((left, right) => right.removableWords - left.removableWords);
+
+    for (const { index, removableWords } of candidates) {
+      if (wordsToRemove <= 0) {
+        break;
+      }
+      const result = trimInteriorSentences(
+        sections[index].body,
+        Math.min(wordsToRemove, removableWords)
+      );
+      sections[index].body = result.text;
+      wordsToRemove -= result.removedWords;
+    }
+
+    expanded = assemble();
+    console.error(`Normalized expanded draft from ${expandedWords} to ${wordCount(stripSources(expanded))} spoken words.`);
+  }
+
+  return expanded;
 }
 
 const date = requestedDate ?? episodeDate();

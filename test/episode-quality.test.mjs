@@ -7,6 +7,7 @@ import {
   sectionMeetsMinimumWordCount,
   SPOKEN_SECTION_BUDGETS,
   stripSources,
+  trimInteriorSentences,
   validateAudioDuration,
   validateEpisodeDocument,
   wordCount
@@ -94,6 +95,20 @@ test("lets the strict document gate own maximum length", () => {
   assert.equal(sectionMeetsMinimumWordCount(highlights, 800), true);
   assert.equal(sectionMeetsMinimumWordCount(highlights, 1067), true);
   assert.equal(sectionMeetsMinimumWordCount(highlights, 799), false);
+});
+
+test("normalizes overlong prose without chopping opening or closing sentences", () => {
+  const prose = [
+    "Opening context stays intact.",
+    "First removable technical detail has several useful words.",
+    "Second removable technical detail also has several useful words.",
+    "Closing takeaway stays intact."
+  ].join(" ");
+  const result = trimInteriorSentences(prose, 20);
+  assert.match(result.text, /^Opening context stays intact\./);
+  assert.match(result.text, /Closing takeaway stays intact\.$/);
+  assert.equal(result.removedWords > 0, true);
+  assert.equal(result.text.endsWith("."), true);
 });
 
 test("checks final audio duration", () => {

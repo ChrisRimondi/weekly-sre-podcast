@@ -45,6 +45,7 @@ const OUT_OF_SCOPE_SIGNALS = [
 export const MIN_EPISODE_WORDS = 4000;
 export const MAX_EPISODE_WORDS = 5200;
 export const TARGET_EPISODE_WORDS = 4500;
+export const NORMALIZED_EPISODE_WORDS = 5000;
 export const MIN_AUDIO_SECONDS = 25 * 60;
 export const MAX_AUDIO_SECONDS = 35 * 60;
 export const MIN_SOURCE_LINKS = 8;
@@ -70,6 +71,35 @@ export function extractEpisodeSection(markdown, sectionName) {
 
 export function sectionMeetsMinimumWordCount(section, words) {
   return words >= section.minWords;
+}
+
+export function trimInteriorSentences(text, maxWordsToRemove) {
+  if (maxWordsToRemove <= 0) {
+    return { text, removedWords: 0 };
+  }
+
+  const sentences = text.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g)?.map((sentence) => sentence.trim()).filter(Boolean) ?? [];
+  if (sentences.length < 3) {
+    return { text, removedWords: 0 };
+  }
+
+  const keep = sentences.map(() => true);
+  let removedWords = 0;
+  for (let index = sentences.length - 2; index > 0; index -= 1) {
+    const sentenceWords = wordCount(sentences[index]);
+    if (removedWords + sentenceWords <= maxWordsToRemove) {
+      keep[index] = false;
+      removedWords += sentenceWords;
+    }
+    if (removedWords === maxWordsToRemove) {
+      break;
+    }
+  }
+
+  return {
+    text: sentences.filter((_, index) => keep[index]).join(" "),
+    removedWords
+  };
 }
 
 export function responseCompletionIssues(response) {
