@@ -1,5 +1,7 @@
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { validateEpisodeDocument } from "./episode-quality.mjs";
 
 const notePath = process.argv[2];
 
@@ -22,9 +24,23 @@ function runResult(command, args) {
 const slug = notePath.split("/").pop().replace(/\.md$/i, "");
 const audioPath = `episodes/${slug}.mp3`;
 
-if (!existsSync(audioPath)) {
-  run("node", ["scripts/generate-audio.mjs", notePath]);
+if (!existsSync(notePath)) {
+  console.error(`Episode note not found: ${notePath}`);
+  process.exit(1);
 }
+
+const note = await readFile(notePath, "utf8");
+const validation = validateEpisodeDocument(note);
+if (validation.issues.length > 0) {
+  console.error(`Episode failed publication checks:\n- ${validation.issues.join("\n- ")}`);
+  process.exit(1);
+}
+
+console.log(
+  `Episode checks passed: ${validation.spokenWords} spoken words, ${validation.sourceLinkCount} sources, ${validation.softwareSignalCount} software-SRE signals.`
+);
+
+run("node", ["scripts/generate-audio.mjs", notePath]);
 
 run("node", ["scripts/generate-feed.mjs"]);
 run("git", ["add", notePath, audioPath, "feed.xml"]);

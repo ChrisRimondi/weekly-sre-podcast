@@ -4,6 +4,7 @@ import { lookup } from "node:dns/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { markdownToPlainText, readJson, slugFromNotePath } from "./lib.mjs";
+import { stripSources, validateAudioDuration } from "./episode-quality.mjs";
 
 const notePath = process.argv[2];
 const maxChunkChars = 3500;
@@ -15,7 +16,7 @@ if (!notePath) {
 
 const config = await readJson("config/podcast.json");
 const note = await readFile(notePath, "utf8");
-const input = markdownToPlainText(note);
+const input = markdownToPlainText(stripSources(note));
 const outputPath = path.join("episodes", `${slugFromNotePath(notePath)}.mp3`);
 
 await mkdir("episodes", { recursive: true });
@@ -33,8 +34,7 @@ async function chooseTtsBackend() {
       console.warn("OPENAI_API_KEY is not set; falling back to local system TTS.");
       return "system";
     }
-    console.error("OPENAI_API_KEY is required to generate audio, and local system TTS is unavailable.");
-    process.exit(1);
+    throw new Error("OPENAI_API_KEY is required to generate audio, and local system TTS is unavailable.");
   }
 
   try {
@@ -45,8 +45,7 @@ async function chooseTtsBackend() {
       console.warn(`OpenAI TTS DNS preflight failed (${error.code ?? error.message}); falling back to local system TTS.`);
       return "system";
     }
-    console.error(`OpenAI TTS DNS preflight failed (${error.code ?? error.message}), and local system TTS is unavailable.`);
-    process.exit(1);
+    throw new Error(`OpenAI TTS DNS preflight failed (${error.code ?? error.message}), and local system TTS is unavailable.`);
   }
 }
 
@@ -117,7 +116,7 @@ async function generateSystemSpeech(text, destination) {
   }
 
   runFfmpeg(["-hide_banner", "-loglevel", "error", "-y", "-i", aiffPath, "-codec:a", "libmp3lame", "-q:a", "4", destination]);
-  assertPlayableAudio(destination);
+  audioDuration(destination);
 }
 
 async function canGenerateSystemTts() {
@@ -139,7 +138,7 @@ function runFfmpeg(args) {
   }
 }
 
-function assertPlayableAudio(audioPath) {
+function audioDuration(audioPath) {
   const result = spawnSync("ffprobe", ["-hide_banner", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", audioPath], {
     encoding: "utf8"
   });
@@ -147,14 +146,15 @@ function assertPlayableAudio(audioPath) {
   if (result.status !== 0 || !Number.isFinite(duration) || duration <= 0) {
     throw new Error(`Generated audio is not playable: ${audioPath}`);
   }
+  return duration;
 }
 
 const chunks = chunkText(input);
-const estimatedMinutes = Math.round((input.split(/\s+/).filter(Boolean).length / 150) * 10) / 10;
 const tempDir = await mkdtemp(path.join(tmpdir(), "weekly-sre-tts-"));
-let ttsBackend = await chooseTtsBackend();
+const candidateOutputPath = path.join(tempDir, "episode.mp3");
 
 try {
+  let ttsBackend = await chooseTtsBackend();
   const segmentPaths = [];
   for (const [index, chunk] of chunks.entries()) {
     const segmentPath = path.join(tempDir, `segment-${String(index + 1).padStart(3, "0")}.mp3`);
@@ -177,15 +177,22 @@ try {
   }
 
   if (segmentPaths.length === 1) {
-    await writeFile(outputPath, await readFile(segmentPaths[0]));
+    await writeFile(candidateOutputPath, await readFile(segmentPaths[0]));
   } else {
     const listPath = path.join(tempDir, "segments.txt");
     const list = segmentPaths.map((segmentPath) => `file '${segmentPath.replaceAll("'", "'\\''")}'`).join("\n");
     await writeFile(listPath, list);
-    runFfmpeg(["-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", outputPath]);
+    runFfmpeg(["-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", candidateOutputPath]);
   }
 
-  console.log(`${outputPath} (${chunks.length} segment${chunks.length === 1 ? "" : "s"}, approx ${estimatedMinutes} min from script length)`);
+  const duration = audioDuration(candidateOutputPath);
+  const durationIssues = validateAudioDuration(duration);
+  if (durationIssues.length > 0) {
+    throw new Error(durationIssues.join(" "));
+  }
+
+  await writeFile(outputPath, await readFile(candidateOutputPath));
+  console.log(`${outputPath} (${chunks.length} segment${chunks.length === 1 ? "" : "s"}, ${(duration / 60).toFixed(1)} min)`);
 } finally {
   await rm(tempDir, { recursive: true, force: true });
 }

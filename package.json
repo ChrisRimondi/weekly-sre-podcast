@@ -7,7 +7,8 @@
     "generate:episode": "node scripts/generate-episode.mjs",
     "generate:feed": "node scripts/generate-feed.mjs",
     "generate:audio": "node scripts/generate-audio.mjs",
-    "publish:episode": "node scripts/publish-episode.mjs"
+    "publish:episode": "node scripts/publish-episode.mjs",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=20"
