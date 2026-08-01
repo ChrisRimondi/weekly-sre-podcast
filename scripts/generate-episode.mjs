@@ -7,6 +7,8 @@ import {
   MAX_EPISODE_WORDS,
   MIN_EPISODE_WORDS,
   responseCompletionIssues,
+  sectionAcceptanceMaxWords,
+  sectionWordCountIsAcceptable,
   SPOKEN_SECTION_BUDGETS,
   validateEpisodeDocument,
   wordCount
@@ -143,6 +145,7 @@ function cleanSectionBody(text, sectionName) {
 
 async function generateSection(date, section, researchDraft) {
   const originalSection = extractEpisodeSection(researchDraft, section.name);
+  const acceptanceMaxWords = sectionAcceptanceMaxWords(section);
   let priorBody = originalSection;
 
   for (let attempt = 1; attempt <= maxSectionAttempts; attempt += 1) {
@@ -196,8 +199,7 @@ async function generateSection(date, section, researchDraft) {
     if (
       completionIssues.length === 0 &&
       !hasUnexpectedHeading &&
-      words >= section.minWords &&
-      words <= section.maxWords
+      sectionWordCountIsAcceptable(section, words)
     ) {
       console.error(`${section.name}: ${words} words (attempt ${attempt}/${maxSectionAttempts}).`);
       return body;
@@ -209,7 +211,7 @@ async function generateSection(date, section, researchDraft) {
     );
   }
 
-  throw new Error(`Unable to generate ${section.minWords}-${section.maxWords} words for ${section.name}.`);
+  throw new Error(`Unable to generate ${section.minWords}-${acceptanceMaxWords} acceptable words for ${section.name}.`);
 }
 
 async function expandEpisodeBySection(date, researchDraft) {

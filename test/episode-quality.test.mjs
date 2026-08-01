@@ -4,6 +4,8 @@ import {
   buildRevisionContext,
   extractEpisodeSection,
   responseCompletionIssues,
+  sectionWordCountIsAcceptable,
+  SPOKEN_SECTION_BUDGETS,
   stripSources,
   validateAudioDuration,
   validateEpisodeDocument,
@@ -85,6 +87,13 @@ test("extracts section bodies for independent expansion", () => {
   assert.equal(wordCount(extractEpisodeSection(episode, "Highlights")), 610);
   assert.match(extractEpisodeSection(episode, "Sources"), /Primary engineering source 8/);
   assert.equal(extractEpisodeSection(episode, "Missing"), "");
+});
+
+test("allows a narrow section-length tolerance before the strict document gate", () => {
+  const highlights = SPOKEN_SECTION_BUDGETS.find(({ name }) => name === "Highlights");
+  assert.equal(sectionWordCountIsAcceptable(highlights, 949), true);
+  assert.equal(sectionWordCountIsAcceptable(highlights, 799), false);
+  assert.equal(sectionWordCountIsAcceptable(highlights, 1000), false);
 });
 
 test("checks final audio duration", () => {
