@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildRevisionContext,
   responseCompletionIssues,
   stripSources,
   validateAudioDuration,
@@ -66,6 +67,16 @@ test("checks Responses API completion state", () => {
     responseCompletionIssues({ status: "incomplete", incomplete_details: { reason: "max_output_tokens" } }).length,
     2
   );
+});
+
+test("builds a complete-document expansion request from a short draft", () => {
+  const draft = `${paragraph(900)}\n\n## Sources\n\n- [Source](https://example.com/source)`;
+  const context = buildRevisionContext(draft, ["Spoken script is too short."]);
+  assert.match(context, /has 900 spoken words/);
+  assert.match(context, /Expand the spoken script by approximately 3600 words/);
+  assert.match(context, /complete replacement document/);
+  assert.match(context, /BEGIN REJECTED DRAFT/);
+  assert.match(context, /Spoken script is too short/);
 });
 
 test("checks final audio duration", () => {

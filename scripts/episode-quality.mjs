@@ -43,6 +43,7 @@ const OUT_OF_SCOPE_SIGNALS = [
 
 export const MIN_EPISODE_WORDS = 4000;
 export const MAX_EPISODE_WORDS = 5200;
+export const TARGET_EPISODE_WORDS = 4500;
 export const MIN_AUDIO_SECONDS = 25 * 60;
 export const MAX_AUDIO_SECONDS = 35 * 60;
 export const MIN_SOURCE_LINKS = 8;
@@ -64,6 +65,33 @@ export function responseCompletionIssues(response) {
     issues.push(`OpenAI response is incomplete: ${response.incomplete_details.reason ?? "unknown reason"}.`);
   }
   return issues;
+}
+
+export function buildRevisionContext(draft, issues) {
+  if (!draft) {
+    return issues.length === 0
+      ? ""
+      : `\nA previous attempt was rejected for these reasons:\n${issues.map((issue) => `- ${issue}`).join("\n")}\nStart over and correct every issue.`;
+  }
+
+  const spokenWords = wordCount(stripSources(draft));
+  const wordDelta = TARGET_EPISODE_WORDS - spokenWords;
+  const lengthDirection = wordDelta > 0
+    ? `Expand the spoken script by approximately ${wordDelta} words.`
+    : `Condense the spoken script by approximately ${Math.abs(wordDelta)} words.`;
+
+  return `
+
+REVISION REQUIRED
+The rejected draft below has ${spokenWords} spoken words. ${lengthDirection}
+Return a complete replacement document from the H1 through the Sources section; do not return a continuation, outline, patch, or commentary. Preserve useful research and valid sources, correct every listed defect, deepen the technical explanations and operational lessons, and avoid padding or repetition.
+
+Rejected-draft issues:
+${issues.map((issue) => `- ${issue}`).join("\n")}
+
+--- BEGIN REJECTED DRAFT ---
+${draft}
+--- END REJECTED DRAFT ---`;
 }
 
 export function validateAudioDuration(durationSeconds) {

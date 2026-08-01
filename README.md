@@ -34,7 +34,7 @@ Publication is blocked unless the generated episode:
 - includes every required section and at least eight complete HTTPS source links; and
 - produces 25 to 35 minutes of playable audio.
 
-The generator retries a rejected draft up to three times. If none passes, the workflow fails without publishing a short or off-topic episode.
+The generator makes up to four attempts. Each retry revises and expands the best prior draft instead of starting over. If none passes, the workflow fails without publishing a short or off-topic episode.
 
 Required repository secret:
 

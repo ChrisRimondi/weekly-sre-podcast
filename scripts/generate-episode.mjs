@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
+  buildRevisionContext,
   MAX_EPISODE_WORDS,
   MIN_EPISODE_WORDS,
   responseCompletionIssues,
@@ -12,7 +13,7 @@ const args = process.argv.slice(2);
 const replaceExisting = args.includes("--replace");
 const requestedDate = args.find((argument) => !argument.startsWith("--"));
 const model = process.env.OPENAI_TEXT_MODEL ?? "gpt-4.1";
-const maxAttempts = 3;
+const maxAttempts = 4;
 
 function episodeDate() {
   const formatter = new Intl.DateTimeFormat("en-CA", {
@@ -40,11 +41,7 @@ function extractText(response) {
   return parts.join("\n").trim();
 }
 
-function generationPrompt(date, priorIssues = []) {
-  const retryContext = priorIssues.length === 0
-    ? ""
-    : `\nA previous draft was rejected for these reasons:\n${priorIssues.map((issue) => `- ${issue}`).join("\n")}\nStart over and correct every issue.`;
-
+function generationPrompt(date, priorIssues = [], priorDraft = "") {
   return `Prepare the Weekly SRE podcast episode for ${date}.
 
 For this podcast, Site Reliability Engineering means the Google-style software engineering discipline of designing, operating, and improving reliable software services and distributed systems. Every story must teach a concrete lesson for people operating production software.
@@ -88,10 +85,10 @@ Use exactly these Markdown sections:
 Start with this H1:
 # Weekly SRE - ${date}
 
-Include at least eight complete HTTPS Markdown links in the Sources section. Mention important source attribution naturally in the spoken script. Before returning, verify the topical scope, section structure, source links, and spoken word count. Return only the finished episode document.${retryContext}`;
+Include at least eight complete HTTPS Markdown links in the Sources section. Mention important source attribution naturally in the spoken script. Before returning, verify the topical scope, section structure, source links, and spoken word count. Return only the finished episode document.${buildRevisionContext(priorDraft, priorIssues)}`;
 }
 
-async function generateEpisodeAttempt(date, priorIssues) {
+async function generateEpisodeAttempt(date, priorIssues, priorDraft) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -117,7 +114,7 @@ async function generateEpisodeAttempt(date, priorIssues) {
           content: [
             {
               type: "input_text",
-              text: generationPrompt(date, priorIssues)
+              text: generationPrompt(date, priorIssues, priorDraft)
             }
           ]
         }
@@ -157,10 +154,11 @@ if (!process.env.OPENAI_API_KEY) {
 await mkdir("notes", { recursive: true });
 let episode = "";
 let priorIssues = [];
+let priorDraft = "";
 
 for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
   console.error(`Generating episode draft ${attempt}/${maxAttempts} with ${model}...`);
-  const apiResponse = await generateEpisodeAttempt(date, priorIssues);
+  const apiResponse = await generateEpisodeAttempt(date, priorIssues, priorDraft);
   const completionIssues = responseCompletionIssues(apiResponse);
   const candidate = extractText(apiResponse);
   const validation = validateEpisodeDocument(candidate);
@@ -175,6 +173,9 @@ for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
   }
 
   priorIssues = candidate ? issues : [...issues, "OpenAI returned no episode text."];
+  if (candidate) {
+    priorDraft = candidate;
+  }
   console.error(`Draft ${attempt} rejected:\n- ${priorIssues.join("\n- ")}`);
 }
 
