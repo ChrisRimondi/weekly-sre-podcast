@@ -22,12 +22,12 @@
 
 Intro
 
-Welcome to another episode of Weekly SRE. This week in Site Reliability Engineering, we’ve seen a string of high-impact incidents from major cloud and SaaS providers—each one offering deep operational insights around distributed system fragility and recovery. AWS’s US-West-2 outage stood out, not just for its broad impact, but as the third major event there in under three months. The diverse root causes—ranging from cooling failures to regional network boundary di
+Welcome to another episode focused on the realities of running production systems at scale. As we reflect on the first half of 2026, it’s clear that even mature cloud and SaaS environments are susceptible to sudden and widespread outages. These events underscore a core SRE truth: dependency mapping and operational awareness are never finished projects. When failures occur – whether from provider-side automation, security incidents in AI infrastructure, or cascadin
 
 Disclosure: this episode is AI-generated.</description>
       <pubDate>Sat, 01 Aug 2026 16:00:00 GMT</pubDate>
       <guid isPermaLink="false">weekly-sre-2026-08-01</guid>
-      <enclosure url="https://chrisrimondi.github.io/weekly-sre-podcast/episodes/weekly-sre-2026-08-01.mp3" length="32284461" type="audio/mpeg"/>
+      <enclosure url="https://chrisrimondi.github.io/weekly-sre-podcast/episodes/weekly-sre-2026-08-01.mp3" length="31173933" type="audio/mpeg"/>
       <itunes:explicit>false</itunes:explicit>
     </item>
     <item>
